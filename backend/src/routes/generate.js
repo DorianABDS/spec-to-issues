@@ -1,12 +1,19 @@
 import { Router } from 'express';
-import axios from 'axios';
+import Anthropic from '@anthropic-ai/sdk';
 import { authMiddleware } from '../middlewares/auth.js';
 
 export const generateRouter = Router();
 
-const SYSTEM_PROMPT = `Tu es un expert en gestion de projet. Tu analyses des GDD et cahiers des charges pour les transformer en issues GitHub structurées.
+const client = new Anthropic();
 
-Tes issues doivent être claires, découpées finement, en français, avec des critères d'acceptation mesurables.
+const SYSTEM_PROMPT = `Tu es un expert en gestion de projet et développement logiciel. Tu analyses des GDD et cahiers des charges pour les transformer en issues GitHub professionnelles destinées à des développeurs seniors.
+
+Tes issues doivent être :
+- Précises et actionnables
+- Avec des critères d'acceptation mesurables et testables
+- Bien découpées (une issue = une tâche claire)
+- En français
+- Avec une description technique suffisamment détaillée
 
 Tu réponds UNIQUEMENT avec un JSON valide, sans texte avant ou après, sans markdown, sans backticks.`;
 
@@ -16,9 +23,7 @@ function buildPrompt(content, teamConfig, projectName, projectType) {
     .map(m => `- ${m.name} (@${m.github_handle}) : ${m.roles.join(', ')}`)
     .join('\n');
 
-  return `${SYSTEM_PROMPT}
-
-Analyse ce document et génère des issues GitHub.
+  return `Analyse ce document et génère des issues GitHub professionnelles.
 
 Projet : ${projectName || 'Non défini'}
 Type : ${projectType || 'Non défini'}
@@ -36,8 +41,8 @@ Réponds avec ce JSON exact :
   "issues": [
     {
       "title": "Titre court et descriptif",
-      "body": "Description détaillée en Markdown",
-      "acceptance_criteria": ["Critère 1", "Critère 2"],
+      "body": "Description détaillée en Markdown avec contexte technique, comportement attendu, et notes d'implémentation si pertinent",
+      "acceptance_criteria": ["Critère mesurable 1", "Critère mesurable 2"],
       "labels": ["label1", "label2"],
       "assignees": ["github_handle"],
       "milestone": "Nom du milestone ou null",
@@ -48,7 +53,7 @@ Réponds avec ce JSON exact :
 }
 
 Labels disponibles : scripting, building, ui-design, 3d-art, game-design, bug, feature, enhancement, documentation, sound-design.
-Découpe finement : préfère 10 issues précises à 3 vagues.`;
+Découpe finement : préfère 10 issues précises à 3 vagues. Chaque issue doit être suffisamment détaillée pour qu'un développeur senior puisse l'implémenter sans ambiguïté.`;
 }
 
 generateRouter.post('/', authMiddleware, async (req, res) => {
@@ -60,18 +65,14 @@ generateRouter.post('/', authMiddleware, async (req, res) => {
   try {
     const prompt = buildPrompt(content, team_config, project_name, project_type);
 
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 8192,
-        },
-      }
-    );
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 8192,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: prompt }],
+    });
 
-    const rawText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const rawText = message.content[0]?.text || '';
     const clean = rawText.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
 
@@ -87,10 +88,9 @@ generateRouter.post('/', authMiddleware, async (req, res) => {
       estimated_effort: issue.estimated_effort || null,
     }));
 
-    res.json({ issues, total: issues.length, model_used: 'gemini-1.5-flash' });
+    res.json({ issues, total: issues.length, model_used: 'claude-sonnet-4-5' });
   } catch (err) {
-  console.error('[Generate]', err.message);
-  console.error('[Generate details]', JSON.stringify(err.response?.data));
-  res.status(500).json({ error: err.message });
+    console.error('[Generate]', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
