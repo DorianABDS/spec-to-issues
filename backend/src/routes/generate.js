@@ -89,7 +89,8 @@ generateRouter.post('/', authMiddleware, async (req, res) => {
 
     res.json({ issues, total: issues.length, model_used: 'gemini-1.5-flash' });
   } catch (err) {
-    console.error('[Generate]', err.message);
-    res.status(500).json({ error: err.message });
-  }
+  console.error('[Generate]', err.message);
+  console.error('[Generate details]', JSON.stringify(err.response?.data));
+  res.status(500).json({ error: err.message });
+}
 });
