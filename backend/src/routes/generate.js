@@ -1,10 +1,8 @@
 import { Router } from 'express';
-import Anthropic from '@anthropic-ai/sdk';
+import axios from 'axios';
 import { authMiddleware } from '../middlewares/auth.js';
 
 export const generateRouter = Router();
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const SYSTEM_PROMPT = `Tu es un expert en gestion de projet. Tu analyses des GDD et cahiers des charges pour les transformer en issues GitHub structurées.
 
@@ -18,7 +16,9 @@ function buildPrompt(content, teamConfig, projectName, projectType) {
     .map(m => `- ${m.name} (@${m.github_handle}) : ${m.roles.join(', ')}`)
     .join('\n');
 
-  return `Analyse ce document et génère des issues GitHub.
+  return `${SYSTEM_PROMPT}
+
+Analyse ce document et génère des issues GitHub.
 
 Projet : ${projectName || 'Non défini'}
 Type : ${projectType || 'Non défini'}
@@ -58,18 +58,20 @@ generateRouter.post('/', authMiddleware, async (req, res) => {
   if (!team_config) return res.status(400).json({ error: 'team_config requis' });
 
   try {
-    const message = await client.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: 8192,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildPrompt(content, team_config, project_name, project_type) }],
-    });
+    const prompt = buildPrompt(content, team_config, project_name, project_type);
 
-    const rawText = message.content
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
-      .join('');
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 8192,
+        },
+      }
+    );
 
+    const rawText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const clean = rawText.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
 
@@ -85,7 +87,7 @@ generateRouter.post('/', authMiddleware, async (req, res) => {
       estimated_effort: issue.estimated_effort || null,
     }));
 
-    res.json({ issues, total: issues.length, model_used: message.model });
+    res.json({ issues, total: issues.length, model_used: 'gemini-1.5-flash' });
   } catch (err) {
     console.error('[Generate]', err.message);
     res.status(500).json({ error: err.message });
