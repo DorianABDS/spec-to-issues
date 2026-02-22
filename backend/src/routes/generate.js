@@ -33,7 +33,7 @@ Ce sont les fonctionnalités non essentielles, le polish, les optimisations et l
 Le milestone de toutes ces issues doit être exactement : "Post-MVP"
 Génère entre 15 et 25 issues couvrant tous les rôles de l'équipe.`;
 
-  return `Analyse ce document et génère des issues GitHub professionnelles.
+  return `Analyse ce document et génère des issues GitHub.
 
 Projet : ${projectName || 'Non défini'}
 Type : ${projectType || 'Non défini'}
@@ -46,28 +46,28 @@ ${phaseInstructions}
 
 DOCUMENT :
 ---
-${content.substring(0, 10000)}
+${content.substring(0, 8000)}
 ---
 
 Réponds avec ce JSON exact :
 {
   "issues": [
     {
-      "title": "Titre court et descriptif",
-      "body": "Description détaillée en Markdown avec contexte technique, comportement attendu, et notes d'implémentation",
-      "acceptance_criteria": ["Critère mesurable 1", "Critère mesurable 2", "Critère mesurable 3"],
-      "labels": ["label1", "label2"],
+      "title": "Titre court",
+      "body": "2-3 phrases : contexte + comportement attendu + note technique si besoin",
+      "acceptance_criteria": ["Critère 1", "Critère 2"],
+      "labels": ["label1"],
       "assignees": ["github_handle"],
       "milestone": "${phase === 'mvp' ? 'MVP' : 'Post-MVP'}",
       "priority": "haute | moyenne | basse",
-      "estimated_effort": "2-3h ou null"
+      "estimated_effort": "2-3h"
     }
   ]
 }
 
 Labels disponibles : scripting, building, ui-design, 3d-art, game-design, bug, feature, enhancement, documentation, sound-design.
-Chaque issue doit être suffisamment détaillée pour qu'un développeur senior puisse l'implémenter sans ambiguïté.
-Assigne chaque issue au membre de l'équipe dont le rôle correspond.`;
+IMPORTANT : body = 2-3 phrases max, maximum 2 critères par issue, titres courts.
+Assigne chaque issue au membre dont le rôle correspond.`;
 }
 
 async function callClaude(prompt) {
