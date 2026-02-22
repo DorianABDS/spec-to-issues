@@ -24,14 +24,8 @@ function buildPrompt(content, teamConfig, projectName, projectType, phase) {
     .join('\n');
 
   const phaseInstructions = phase === 'mvp'
-    ? `Génère UNIQUEMENT les issues du MVP (Minimum Viable Product).
-Ce sont les fonctionnalités essentielles et indispensables pour avoir un jeu jouable.
-Le milestone de toutes ces issues doit être exactement : "MVP"
-Génère entre 20 et 30 issues couvrant tous les rôles de l'équipe.`
-    : `Génère UNIQUEMENT les issues Post-MVP (améliorations, polish, features secondaires).
-Ce sont les fonctionnalités non essentielles, le polish, les optimisations et les features bonus.
-Le milestone de toutes ces issues doit être exactement : "Post-MVP"
-Génère entre 15 et 25 issues couvrant tous les rôles de l'équipe.`;
+  ? `Génère UNIQUEMENT 1 issue de test pour le MVP. Milestone : "MVP"`
+  : `Génère UNIQUEMENT 1 issue de test pour le Post-MVP. Milestone : "Post-MVP"`;
 
   return `Analyse ce document et génère des issues GitHub.
 
