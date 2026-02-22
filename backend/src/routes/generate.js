@@ -61,7 +61,7 @@ generateRouter.post('/', authMiddleware, async (req, res) => {
     const prompt = buildPrompt(content, team_config, project_name, project_type);
 
     const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
@@ -92,5 +92,5 @@ generateRouter.post('/', authMiddleware, async (req, res) => {
   console.error('[Generate]', err.message);
   console.error('[Generate details]', JSON.stringify(err.response?.data));
   res.status(500).json({ error: err.message });
-}
+  }
 });
