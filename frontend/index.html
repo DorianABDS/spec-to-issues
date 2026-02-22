@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec → Issues · Workers Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080b10;
+      --surface: #0e1318;
+      --surface2: #141a22;
+      --border: rgba(255,255,255,0.07);
+      --accent: #00e5ff;
+      --accent2: #ff3d6b;
+      --text: #e8edf5;
+      --muted: #5a6680;
+      --green: #00e096;
+      --yellow: #ffd166;
+      --red: #ff3d6b;
+      --radius: 10px;
+      --font: 'Syne', sans-serif;
+      --mono: 'IBM Plex Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Layout ── */
+    .app { position: relative; z-index: 1; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 32px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8,11,16,0.8);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: -0.3px;
+    }
+
+    .logo-icon {
+      width: 28px; height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    .logo-sub { color: var(--muted); font-weight: 400; font-size: 12px; }
+
+    /* Stepper */
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+
+    .step-item.active { background: rgba(0,229,255,0.1); color: var(--accent); }
+    .step-item.done { color: var(--green); }
+    .step-sep { color: var(--border); font-size: 10px; }
+
+    /* User */
+    .user-area { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); }
+    .user-login { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+    .btn-primary:hover { background: #33ebff; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.15); color: var(--text); }
+
+    .btn-danger { background: rgba(255,61,107,0.1); color: var(--red); border: 1px solid rgba(255,61,107,0.2); }
+    .btn-danger:hover { background: rgba(255,61,107,0.2); }
+
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* ── Main ── */
+    main { max-width: 860px; margin: 0 auto; padding: 48px 24px; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+    }
+
+    .card + .card { margin-top: 16px; }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Inputs ── */
+    .input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .input:focus { border-color: var(--accent); }
+    .input::placeholder { color: var(--muted); }
+
+    textarea.input { resize: vertical; min-height: 200px; font-family: var(--mono); font-size: 12px; line-height: 1.6; }
+
+    select.input { cursor: pointer; }
+
+    .input-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      color: var(--muted);
+      border: none;
+      background: transparent;
+      font-family: var(--font);
+      transition: all 0.15s;
+    }
+    .tab.active { background: var(--surface); color: var(--accent); border: 1px solid var(--border); }
+
+    /* ── Drop zone ── */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .dropzone:hover, .dropzone.drag-over { border-color: var(--accent); background: rgba(0,229,255,0.03); }
+    .dropzone-icon { font-size: 32px; margin-bottom: 12px; }
+    .dropzone-text { color: var(--muted); font-size: 13px; }
+    .dropzone-sub { font-size: 11px; color: var(--muted); margin-top: 6px; opacity: 0.6; }
+
+    /* ── Hero ── */
+    .hero { text-align: center; margin-bottom: 48px; }
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 56px);
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1.05;
+      margin-bottom: 16px;
+    }
+    .hero h1 .arrow { color: var(--accent); }
+    .hero p { color: var(--muted); font-size: 15px; }
+
+    /* ── Alert ── */
+    .alert {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+    .alert-warning { background: rgba(255,209,102,0.08); border: 1px solid rgba(255,209,102,0.2); color: var(--yellow); }
+    .alert-success { background: rgba(0,224,150,0.08); border: 1px solid rgba(0,224,150,0.2); color: var(--green); }
+    .alert-error { background: rgba(255,61,107,0.08); border: 1px solid rgba(255,61,107,0.2); color: var(--red); }
+
+    /* ── Repo grid ── */
+    .repo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .repo-item {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.15s;
+      background: var(--surface2);
+    }
+    .repo-item:hover { border-color: rgba(255,255,255,0.15); }
+    .repo-item.selected { border-color: var(--accent); background: rgba(0,229,255,0.05); }
+    .repo-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .repo-full { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+
+    /* ── Member list ── */
+    .member-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      background: var(--surface2);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+    }
+    .member-info { flex: 1; }
+    .member-name { font-size: 13px; font-weight: 600; }
+    .member-handle { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+    .member-roles { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-role { background: rgba(255,255,255,0.06); color: var(--muted); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
+    .badge-role:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .badge-role.on { background: rgba(0,229,255,0.12); color: var(--accent); border-color: rgba(0,229,255,0.3); }
+    .badge-label { background: rgba(255,255,255,0.06); color: var(--muted); }
+    .badge-high { background: rgba(255,61,107,0.12); color: var(--red); }
+    .badge-mid { background: rgba(255,209,102,0.12); color: var(--yellow); }
+    .badge-low { background: rgba(0,224,150,0.12); color: var(--green); }
+
+    /* ── Issue card ── */
+    .issue-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 8px;
+      transition: border-color 0.15s;
+    }
+    .issue-card:hover { border-color: rgba(255,255,255,0.12); }
+
+    .issue-header { display: flex; align-items: flex-start; gap: 10px; }
+    .priority-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+    .priority-dot.haute { background: var(--red); }
+    .priority-dot.moyenne { background: var(--yellow); }
+    .priority-dot.basse { background: var(--green); }
+
+    .issue-title {
+      font-size: 14px;
+      font-weight: 600;
+      cursor: text;
+      flex: 1;
+      line-height: 1.4;
+    }
+    .issue-title[contenteditable="true"] {
+      outline: 1px solid var(--accent);
+      border-radius: 4px;
+      padding: 2px 6px;
+    }
+
+    .issue-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; padding-left: 18px; }
+
+    .issue-expand { display: none; padding: 16px 0 0 18px; }
+    .issue-expand.open { display: block; }
+
+    .issue-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    /* ── Results ── */
+    .result-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--surface2);
+      border-radius: var(--radius);
+      margin-bottom: 6px;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      transition: all 0.15s;
+    }
+    .result-item:hover { border-color: var(--accent); }
+    .result-number { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+    .result-title { font-size: 13px; color: var(--text); flex: 1; margin: 0 12px; }
+    .result-link { font-size: 11px; color: var(--accent); }
+
+    /* ── Spinner ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+
+    /* ── Steps ── */
+    .step { display: none; }
+    .step.active { display: block; animation: fadeUp 0.3s ease; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── CTA bar ── */
+    .cta-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-top: 16px;
+    }
+
+    /* ── Grid helpers ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .mt-4 { margin-top: 16px; }
+    .mt-2 { margin-top: 8px; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .gap-2 { gap: 8px; }
+    .flex-1 { flex: 1; }
+    .text-muted { color: var(--muted); font-size: 12px; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
+
+    @media (max-width: 600px) {
+      header { padding: 14px 16px; }
+      .stepper { display: none; }
+      main { padding: 24px 16px; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .repo-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <div>
+        <div>Spec → Issues</div>
+        <div class="logo-sub">Workers Studio</div>
+      </div>
+    </div>
+
+    <nav class="stepper" id="stepper">
+      <span class="step-item active" data-step="0">① Import</span>
+      <span class="step-sep">›</span>
+      <span class="step-item" data-step="1">② Config</span>
+      <span class="step-sep">›</span>
+      <span class="step-item" data-step="2">③ Révision</span>
+      <span class="step-sep">›</span>
+      <span class="step-item" data-step="3">④ Résultats</span>
+    </nav>
+
+    <div class="user-area" id="userArea">
+      <a href="/api/auth/github" class="btn btn-ghost btn-sm">🐙 Connexion GitHub</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- ── STEP 0 : IMPORT ── -->
+    <div class="step active" id="step-0">
+      <div class="hero">
+        <h1>GDD <span class="arrow">→</span> GitHub Issues</h1>
+        <p>Importe ton cahier des charges. L'IA génère les issues.</p>
+      </div>
+
+      <div id="authAlert" class="alert alert-warning" style="display:none">
+        ⚠️ Connecte-toi avec GitHub pour continuer.
+        <a href="/api/auth/github" class="btn btn-primary btn-sm" style="margin-left:auto">Se connecter</a>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('text')">📝 Texte</button>
+        <button class="tab" onclick="switchTab('file')">📁 Fichier</button>
+        <button class="tab" onclick="switchTab('url')">🔗 URL</button>
+      </div>
+
+      <div class="card" id="tab-text">
+        <textarea class="input" id="textInput" placeholder="Colle ici ton GDD, cahier des charges, specs...
+
+Exemple :
+# Brainrot Toys Factory
+## Système de tapis roulants
+Les joueurs placent des tapis pour acheminer les jouets..."></textarea>
+      </div>
+
+      <div class="card" id="tab-file" style="display:none">
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+          <div class="dropzone-icon">📂</div>
+          <div class="dropzone-text">Glisse-dépose ton fichier ici ou clique pour parcourir</div>
+          <div class="dropzone-sub">PDF · Markdown · DOCX · TXT · max 20MB</div>
+        </div>
+        <input type="file" id="fileInput" accept=".pdf,.md,.docx,.txt" style="display:none">
+      </div>
+
+      <div class="card" id="tab-url" style="display:none">
+        <div class="input-label">URL du document</div>
+        <input type="url" class="input" id="urlInput" placeholder="https://notion.so/... ou https://docs.google.com/...">
+        <p class="text-muted mt-2">Fonctionne avec les pages Notion publiques et Google Docs partagés.</p>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:16px">
+        <button class="btn btn-primary" id="btnImport" onclick="handleImport()">
+          Continuer →
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 1 : CONFIG ── -->
+    <div class="step" id="step-1">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px">
+        <button class="btn btn-ghost btn-sm" onclick="goTo(0)">← Retour</button>
+        <h2 style="font-size:18px; font-weight:700">Configuration</h2>
+        <div></div>
+      </div>
+
+      <!-- Repo -->
+      <div class="card">
+        <div class="card-title">
+          🗂 Repository GitHub
+          <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="loadRepos()">↺ Refresh</button>
+        </div>
+        <div class="repo-grid" id="repoGrid">
+          <div class="text-muted">Chargement...</div>
+        </div>
+      </div>
+
+      <!-- Project -->
+      <div class="card">
+        <div class="card-title">🚀 Projet</div>
+        <div class="grid-2">
+          <div>
+            <div class="input-label">Nom du projet</div>
+            <input type="text" class="input" id="projectName" placeholder="Brainrot Toys Factory">
+          </div>
+          <div>
+            <div class="input-label">Type</div>
+            <select class="input" id="projectType">
+              <option>Jeu Roblox</option>
+              <option>App Web</option>
+              <option>Extension Chrome</option>
+              <option>Autre</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Team -->
+      <div class="card">
+        <div class="card-title">👥 Équipe</div>
+        <div id="memberList"></div>
+        <div style="border-top:1px solid var(--border); padding-top:16px; margin-top:8px">
+          <div class="text-muted" style="margin-bottom:10px">Ajouter un membre</div>
+          <div style="display:flex; gap:8px; margin-bottom:8px">
+            <input type="text" class="input" id="newMemberName" placeholder="Nom">
+            <input type="text" class="input" id="newMemberHandle" placeholder="@handle" style="width:140px">
+            <button class="btn btn-primary btn-sm" onclick="addMember()">+</button>
+          </div>
+          <div id="newMemberRoles" class="member-roles"></div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:16px">
+        <button class="btn btn-primary" id="btnGenerate" onclick="handleGenerate()">
+          ✨ Générer les issues
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 2 : REVIEW ── -->
+    <div class="step" id="step-2">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px">
+        <button class="btn btn-ghost btn-sm" onclick="goTo(1)">← Retour</button>
+        <div style="text-align:center">
+          <h2 style="font-size:18px; font-weight:700">Révision</h2>
+          <div class="text-muted" id="reviewSub"></div>
+        </div>
+        <div></div>
+      </div>
+
+      <div id="issueList"></div>
+
+      <div class="cta-bar">
+        <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); cursor:pointer">
+          <input type="checkbox" id="dryRunCheck"> 👁 Dry-run (aperçu sans push)
+        </label>
+        <button class="btn btn-primary" id="btnCreate" onclick="handleCreate()">
+          🚀 Créer les issues
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 3 : RESULTS ── -->
+    <div class="step" id="step-3">
+      <div style="text-align:center; padding:40px 0 32px">
+        <div style="font-size:48px; margin-bottom:12px">✅</div>
+        <h2 style="font-size:28px; font-weight:800; letter-spacing:-1px" id="resultTitle"></h2>
+        <p class="text-muted" id="resultSub" style="margin-top:6px"></p>
+      </div>
+
+      <div class="card" id="createdList"></div>
+      <div class="card" id="failedList" style="margin-top:12px; display:none"></div>
+
+      <div style="display:flex; justify-content:center; margin-top:24px">
+        <button class="btn btn-ghost" onclick="reset()">↺ Nouveau projet</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
