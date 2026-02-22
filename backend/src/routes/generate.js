@@ -17,11 +17,21 @@ Tes issues doivent être :
 
 Tu réponds UNIQUEMENT avec un JSON valide, sans texte avant ou après, sans markdown, sans backticks.`;
 
-function buildPrompt(content, teamConfig, projectName, projectType) {
+function buildPrompt(content, teamConfig, projectName, projectType, phase) {
   const members = teamConfig.members
     .filter(m => m.active)
     .map(m => `- ${m.name} (@${m.github_handle}) : ${m.roles.join(', ')}`)
     .join('\n');
+
+  const phaseInstructions = phase === 'mvp'
+    ? `Génère UNIQUEMENT les issues du MVP (Minimum Viable Product).
+Ce sont les fonctionnalités essentielles et indispensables pour avoir un jeu jouable.
+Le milestone de toutes ces issues doit être exactement : "MVP"
+Génère entre 20 et 30 issues couvrant tous les rôles de l'équipe.`
+    : `Génère UNIQUEMENT les issues Post-MVP (améliorations, polish, features secondaires).
+Ce sont les fonctionnalités non essentielles, le polish, les optimisations et les features bonus.
+Le milestone de toutes ces issues doit être exactement : "Post-MVP"
+Génère entre 15 et 25 issues couvrant tous les rôles de l'équipe.`;
 
   return `Analyse ce document et génère des issues GitHub professionnelles.
 
@@ -31,9 +41,12 @@ Type : ${projectType || 'Non défini'}
 ÉQUIPE :
 ${members || 'Aucun membre'}
 
+PHASE : ${phase.toUpperCase()}
+${phaseInstructions}
+
 DOCUMENT :
 ---
-${content.substring(0, 15000)}
+${content.substring(0, 10000)}
 ---
 
 Réponds avec ce JSON exact :
@@ -41,11 +54,11 @@ Réponds avec ce JSON exact :
   "issues": [
     {
       "title": "Titre court et descriptif",
-      "body": "Description détaillée en Markdown avec contexte technique, comportement attendu, et notes d'implémentation si pertinent",
-      "acceptance_criteria": ["Critère mesurable 1", "Critère mesurable 2"],
+      "body": "Description détaillée en Markdown avec contexte technique, comportement attendu, et notes d'implémentation",
+      "acceptance_criteria": ["Critère mesurable 1", "Critère mesurable 2", "Critère mesurable 3"],
       "labels": ["label1", "label2"],
       "assignees": ["github_handle"],
-      "milestone": "Nom du milestone ou null",
+      "milestone": "${phase === 'mvp' ? 'MVP' : 'Post-MVP'}",
       "priority": "haute | moyenne | basse",
       "estimated_effort": "2-3h ou null"
     }
@@ -53,7 +66,22 @@ Réponds avec ce JSON exact :
 }
 
 Labels disponibles : scripting, building, ui-design, 3d-art, game-design, bug, feature, enhancement, documentation, sound-design.
-Découpe finement : préfère 10 issues précises à 3 vagues. Chaque issue doit être suffisamment détaillée pour qu'un développeur senior puisse l'implémenter sans ambiguïté.`;
+Chaque issue doit être suffisamment détaillée pour qu'un développeur senior puisse l'implémenter sans ambiguïté.
+Assigne chaque issue au membre de l'équipe dont le rôle correspond.`;
+}
+
+async function callClaude(prompt) {
+  const message = await client.messages.create({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 4096,
+    system: SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const rawText = message.content[0]?.text || '';
+  const clean = rawText.replace(/```json|```/g, '').trim();
+  const parsed = JSON.parse(clean);
+  return parsed.issues || [];
 }
 
 generateRouter.post('/', authMiddleware, async (req, res) => {
@@ -63,20 +91,20 @@ generateRouter.post('/', authMiddleware, async (req, res) => {
   if (!team_config) return res.status(400).json({ error: 'team_config requis' });
 
   try {
-    const prompt = buildPrompt(content, team_config, project_name, project_type);
+    // Appel 1 : MVP
+    console.log('[Generate] Génération MVP...');
+    const mvpPrompt = buildPrompt(content, team_config, project_name, project_type, 'mvp');
+    const mvpIssues = await callClaude(mvpPrompt);
+    console.log(`[Generate] MVP : ${mvpIssues.length} issues`);
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: prompt }],
-    });
+    // Appel 2 : Post-MVP
+    console.log('[Generate] Génération Post-MVP...');
+    const postMvpPrompt = buildPrompt(content, team_config, project_name, project_type, 'post-mvp');
+    const postMvpIssues = await callClaude(postMvpPrompt);
+    console.log(`[Generate] Post-MVP : ${postMvpIssues.length} issues`);
 
-    const rawText = message.content[0]?.text || '';
-    const clean = rawText.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(clean);
-
-    const issues = parsed.issues.map((issue, i) => ({
+    // Fusion
+    const allIssues = [...mvpIssues, ...postMvpIssues].map((issue, i) => ({
       id: `issue-${Date.now()}-${i}`,
       title: issue.title || 'Sans titre',
       body: issue.body || '',
@@ -88,7 +116,8 @@ generateRouter.post('/', authMiddleware, async (req, res) => {
       estimated_effort: issue.estimated_effort || null,
     }));
 
-    res.json({ issues, total: issues.length, model_used: 'claude-sonnet-4-5' });
+    console.log(`[Generate] Total : ${allIssues.length} issues générées`);
+    res.json({ issues: allIssues, total: allIssues.length, model_used: 'claude-sonnet-4-5' });
   } catch (err) {
     console.error('[Generate]', err.message);
     res.status(500).json({ error: err.message });
