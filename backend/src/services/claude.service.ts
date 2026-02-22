@@ -69,7 +69,7 @@ export async function generateIssues(
   projectType?: string
 ): Promise<{ issues: GeneratedIssue[]; model_used: string }> {
   const message = await client.messages.create({
-    model: 'claude-opus-4-6',
+    model: 'claude-opus-4-5',
     max_tokens: 8192,
     system: SYSTEM_PROMPT,
     messages: [

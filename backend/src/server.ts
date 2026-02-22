@@ -33,7 +33,8 @@ app.get('/api/health', (_req, res) => {
 });
 
 // ─── Error handler ───────────────────────────────────────────────────────────
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction): void => {
   console.error('[Error]', err.message);
   res.status(500).json({ error: err.message || 'Internal server error' });
 });

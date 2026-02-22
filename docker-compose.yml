@@ -18,7 +18,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      target: builder
+      target: dev
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -26,7 +26,6 @@ services:
       - "5173:5173"
     env_file:
       - ./frontend/.env
-    command: npm run dev -- --host
     depends_on:
       - backend
     restart: unless-stopped

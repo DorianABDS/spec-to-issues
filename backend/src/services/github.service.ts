@@ -23,14 +23,16 @@ export async function getUserRepos(token: string): Promise<GitHubRepo[]> {
   const { data } = await ghClient(token).get('/user/repos', {
     params: { sort: 'updated', per_page: 100, type: 'all' },
   });
-  return data;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return data.map((r: any) => ({ ...r, owner: r.owner.login }));
 }
 
 export async function getOrgRepos(token: string, org: string): Promise<GitHubRepo[]> {
   const { data } = await ghClient(token).get(`/orgs/${org}/repos`, {
     params: { sort: 'updated', per_page: 100, type: 'all' },
   });
-  return data;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return data.map((r: any) => ({ ...r, owner: r.owner.login }));
 }
 
 export async function ensureLabels(

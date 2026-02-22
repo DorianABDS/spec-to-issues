@@ -11,7 +11,10 @@ const generateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
   message: { error: 'Trop de générations. Limite : 10 par heure.' },
-  keyGenerator: (req) => (req as AuthRequest).user?.login || req.ip || 'unknown',
+  keyGenerator: (req) => {
+    const authReq = req as AuthRequest;
+    return authReq.user?.login || req.socket.remoteAddress || req.ip || 'unknown';
+  },
 });
 
 generateRouter.post('/', authMiddleware, generateLimiter, async (req: AuthRequest, res: Response) => {

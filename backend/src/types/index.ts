@@ -90,5 +90,5 @@ export interface GitHubRepo {
   full_name: string;
   private: boolean;
   description: string | null;
-  owner: { login: string };
+  owner: string; // login string, consistent with frontend
 }

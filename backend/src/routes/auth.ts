@@ -48,10 +48,10 @@ authRouter.get('/github/callback', async (req: Request, res: Response) => {
 
     // Redirect to frontend with JWT
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    res.redirect(`${frontendUrl}/auth/callback?token=${jwtToken}&login=${ghUser.login}&avatar=${encodeURIComponent(ghUser.avatar_url)}`);
+    return res.redirect(`${frontendUrl}/auth/callback?token=${jwtToken}&login=${ghUser.login}&avatar=${encodeURIComponent(ghUser.avatar_url)}`);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'OAuth error';
-    res.status(500).json({ error: message });
+    return res.status(500).json({ error: message });
   }
 });
 

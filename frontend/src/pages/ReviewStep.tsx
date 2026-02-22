@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { useAppStore } from '../../stores/app.store';
 import { createIssues } from '../../services/api';
 import { GeneratedIssue, Priority } from '../../types';
+import axios from 'axios';
 
 const PRIORITY_STYLES: Record<Priority, string> = {
   haute:   'bg-red-500/20 text-red-300 border-red-500/30',
@@ -200,6 +201,25 @@ export function ReviewStep() {
   } = useAppStore();
 
   const [dryRun, setDryRun] = useState(false);
+  const [isDryRunning, setIsDryRunning] = useState(false);
+
+  async function handleDryRun() {
+    if (issues.length === 0) return toast.error('Aucune issue à prévisualiser');
+    setIsDryRunning(true);
+    try {
+      const base = import.meta.env.VITE_API_URL || '/api';
+      const raw = localStorage.getItem('gdd-app-state');
+      const token = raw ? JSON.parse(raw)?.state?.user?.token : null;
+      const { data } = await axios.post(`${base}/github/dry-run`, { issues }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      toast(`Dry-run : ${data.total} issues prêtes (aucune créée)`, { icon: '👁️', duration: 4000 });
+    } catch {
+      toast.error('Erreur lors du dry-run');
+    } finally {
+      setIsDryRunning(false);
+    }
+  }
 
   async function handleCreate() {
     if (!selectedRepo) return toast.error('Aucun repo sélectionné');
@@ -258,15 +278,23 @@ export function ReviewStep() {
             />
             <Eye size={14} /> Dry-run (prévisualisation sans push)
           </label>
+          {dryRun && (
+            <button onClick={handleDryRun} disabled={isDryRunning} className="btn-ghost text-xs">
+              {isDryRunning ? <Loader2 size={12} className="animate-spin" /> : <Eye size={12} />}
+              Tester
+            </button>
+          )}
         </div>
         <button
-          onClick={dryRun ? () => toast('Mode dry-run : aucune issue créée.', { icon: '👁️' }) : handleCreate}
-          disabled={isCreating || issues.length === 0}
+          onClick={dryRun ? handleDryRun : handleCreate}
+          disabled={isCreating || isDryRunning || issues.length === 0}
           className="btn-primary"
         >
-          {isCreating
-            ? <><Loader2 size={16} className="animate-spin" /> Création...</>
-            : <><ArrowRight size={16} /> Créer {issues.length} issues</>}
+          {(isCreating || isDryRunning)
+            ? <><Loader2 size={16} className="animate-spin" /> {dryRun ? 'Dry-run...' : 'Création...'}</>
+            : dryRun
+              ? <><Eye size={16} /> Prévisualiser {issues.length} issues</>
+              : <><ArrowRight size={16} /> Créer {issues.length} issues</>}
         </button>
       </div>
     </div>

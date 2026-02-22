@@ -18,7 +18,7 @@ githubRouter.get('/repos', authMiddleware, async (req: AuthRequest, res: Respons
       full_name: r.full_name,
       private: r.private,
       description: r.description,
-      owner: r.owner.login,
+      owner: r.owner, // already a string
     })));
   } catch (err) {
     const message = err instanceof Error ? err.message : 'GitHub error';

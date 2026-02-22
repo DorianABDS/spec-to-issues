@@ -1,13 +1,16 @@
 import axios from 'axios';
 import { ParsedContent, GeneratedIssue, TeamConfig, GitHubRepo, CreatedIssue } from '../types';
 
+// Must match the `name` field in app.store.ts persist config
+const STORE_KEY = 'gdd-app-state';
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
 });
 
 // Attach JWT from store
 api.interceptors.request.use((config) => {
-  const raw = localStorage.getItem('gdd-app-state');
+  const raw = localStorage.getItem(STORE_KEY);
   if (raw) {
     try {
       const state = JSON.parse(raw);

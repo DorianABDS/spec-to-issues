@@ -17,18 +17,23 @@ export function ImportStep() {
   const onDrop = useCallback(async (files: File[]) => {
     const file = files[0];
     if (!file) return;
+    // Fix 6: check user before upload
+    if (!user) {
+      toast.error('Connecte-toi avec GitHub d\'abord');
+      return;
+    }
     setLoading(true);
     try {
       const result = await parseFile(file);
       setParsed(result);
       toast.success(`"${file.name}" importé — ${result.char_count.toLocaleString()} caractères`);
       setStep('config');
-    } catch (err) {
+    } catch {
       toast.error('Erreur lors du parsing du fichier');
     } finally {
       setLoading(false);
     }
-  }, [setParsed, setStep]);
+  }, [setParsed, setStep, user]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -43,15 +48,25 @@ export function ImportStep() {
   });
 
   async function handleSubmit() {
-    if (!user) return toast.error('Connecte-toi avec GitHub d\'abord');
+    // Fix 2: early returns before setLoading → moved checks inside try, setLoading always reset in finally
+    if (!user) {
+      toast.error('Connecte-toi avec GitHub d\'abord');
+      return;
+    }
+    if (mode === 'text' && !text.trim()) {
+      toast.error('Colle du contenu dans la zone de texte');
+      return;
+    }
+    if (mode === 'url' && !url.trim()) {
+      toast.error('Entre une URL valide');
+      return;
+    }
     setLoading(true);
     try {
       let result;
       if (mode === 'text') {
-        if (!text.trim()) return toast.error('Colle du contenu dans la zone de texte');
         result = await parseText(text);
       } else if (mode === 'url') {
-        if (!url.trim()) return toast.error('Entre une URL valide');
         result = await parseUrl(url);
       }
       if (result) {
@@ -59,7 +74,7 @@ export function ImportStep() {
         toast.success(`Contenu importé — ${result.char_count.toLocaleString()} caractères`);
         setStep('config');
       }
-    } catch (err) {
+    } catch {
       toast.error('Erreur lors de l\'import');
     } finally {
       setLoading(false);
