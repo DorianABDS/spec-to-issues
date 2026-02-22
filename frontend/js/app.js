@@ -1,7 +1,7 @@
 // ── Config ────────────────────────────────────────────────────────────────────
 const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:3001/api'
-  : '/api'; // Render backend URL — update this after deploy
+  : 'https://spec-to-issues.onrender.com';
 
 const ROLES = ['scripter', 'builder', 'ui_designer', '3d_artist', 'game_designer', 'sound_designer'];
 const ROLE_LABELS = {
