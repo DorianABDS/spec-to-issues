@@ -67,7 +67,7 @@ generateRouter.post('/', authMiddleware, async (req, res) => {
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-5',
-      max_tokens: 8192,
+      max_tokens: 4096,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }],
     });
